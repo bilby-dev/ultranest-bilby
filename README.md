@@ -18,3 +18,11 @@ or conda
 ```
 conda install conda-forge:ultranest-bilby
 ```
+
+## Notes
+
+- Interrupting when using `npool>1` does not work.
+
+## Changes compared to original version
+
+- `resume` no longer always set to `'overwrite'` (See commit: 48ab8169f4dab799d458d1602d082ae6f53ec286)
