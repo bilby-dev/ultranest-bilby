@@ -6,11 +6,6 @@ import bilby
 import pytest
 
 
-@pytest.fixture(autouse=True)
-def bilby_test_mode(bilby_test_mode):
-    pass
-
-
 @pytest.fixture(scope="session")
 def sampler():
     return "ultranest"

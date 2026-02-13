@@ -26,10 +26,3 @@ def bilby_gaussian_likelihood_and_priors():
 @pytest.fixture(params=[1, 2])
 def npool(request):
     return request.param
-
-
-@pytest.fixture
-def bilby_test_mode():
-    bilby.core.utils.command_line_args.bilby_test_mode = False
-    yield
-    bilby.core.utils.command_line_args.bilby_test_mode = False
