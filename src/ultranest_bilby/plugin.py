@@ -120,9 +120,11 @@ class Ultranest(_TemporaryFileSamplerMixin, NestedSampler):
             kwargs["show_status"] = kwargs.pop("verbose")
         resume = kwargs.get("resume", False)
         if resume is True:
-            kwargs["resume"] = "overwrite"
+            kwargs["resume"] = True
         elif resume is False:
             kwargs["resume"] = "overwrite"
+        else:
+            kwargs["resume"] = resume
 
     def _verify_kwargs_against_default_kwargs(self):
         """Check the kwargs"""
