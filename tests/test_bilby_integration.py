@@ -1,7 +1,6 @@
-import os
 import threading
 import time
-from signal import SIGINT
+import signal
 
 import bilby
 import pytest
@@ -79,18 +78,19 @@ def test_interrupt_sampler(
     bilby_gaussian_likelihood_and_priors,
     outdir,
     conversion_function,
-    npool,
     sampler,
-    sampler_kwargs,
 ):
     likelihood, priors = bilby_gaussian_likelihood_and_priors
 
-    pid = os.getpid()
+    started = threading.Event()
+    calls = 0
 
     def trigger_signal():
-        # Let sampler setup begin, then interrupt this process.
-        time.sleep(4)
-        os.kill(pid, SIGINT)
+        if started.wait(timeout=10):
+            signal.raise_signal(signal.SIGINT)
+        else:
+            # if we never started, don't hang the test forever
+            pytest.fail("Sampler never began likelihood evaluations")
 
     thread = threading.Thread(target=trigger_signal, daemon=True)
     thread.start()
@@ -98,23 +98,31 @@ def test_interrupt_sampler(
     original_log_likelihood = likelihood.log_likelihood
 
     def slow_log_likelihood(parameters=None):
+        nonlocal calls
+        calls += 1
+        # Bilby tests the likelihood before starting sampling
+        if calls > 500:
+            started.set()
         time.sleep(0.01)
         return original_log_likelihood(parameters)
 
     likelihood.log_likelihood = slow_log_likelihood
 
+    label = "test_interrupt"
+
     with pytest.raises((SystemExit, KeyboardInterrupt)) as exc:
-        while True:
-            run_sampler(
-                likelihood,
-                priors,
-                outdir,
-                conversion_function,
-                sampler,
-                npool=npool,
-                exit_code=5,
-                **sampler_kwargs,
-            )
+        run_sampler(
+            likelihood,
+            priors,
+            outdir,
+            conversion_function,
+            sampler,
+            exit_code=5,
+            resume=True,
+            label=label,
+        )
 
     if isinstance(exc.value, SystemExit):
         assert exc.value.code == 5
+
+    assert (outdir / f"ultra_{label}" / "results" / "points.hdf5").exists()
